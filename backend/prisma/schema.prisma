@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  createdProjects Project[]       @relation("ProjectCreator")
+  projectMembers  ProjectMember[]
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  createdTasks    Task[]          @relation("TaskCreator")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  createdBy   User   @relation("ProjectCreator", fields: [createdById], references: [id])
+  createdById String
+
+  members ProjectMember[]
+  tasks   Task[]
+}
+
+model ProjectMember {
+  id        String @id @default(uuid())
+  role      String @default("member")
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("todo")
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  assignedTo   User?   @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedToId String?
+
+  createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById String
+}
