@@ -16,7 +16,7 @@ const avatarColors = ['#6c63ff', '#1D9E75', '#BA7517', '#E24B4A', '#185FA5'];
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth(); // ✅ moved to top - hooks must be before any return
+  const { user } = useAuth();
 
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -113,8 +113,11 @@ export default function ProjectDetail() {
 
   const tasksByStatus = (status) => tasks.filter(t => t.status === status);
 
-  // ✅ now safe to use user here since hook is at top
-  const myMembership = project?.members?.find(m => m.userId === user?.id);
+  // Bulletproof admin check - matches against both userId and user.id from API
+  const currentUserId = user?.id;
+  const myMembership = project?.members?.find(
+    m => m.userId === currentUserId || m.user?.id === currentUserId
+  );
   const isAdmin = myMembership?.role === 'admin';
 
   const action = (
@@ -148,7 +151,7 @@ export default function ProjectDetail() {
           <span style={{ fontSize: 11, color: '#aaa' }}>Members:</span>
           <div style={{ display: 'flex' }}>
             {project?.members?.map((m, i) => (
-              <div key={m.id} title={m.user?.name} style={{
+              <div key={m.id} title={`${m.user?.name} (${m.role})`} style={{
                 width: 28, height: 28, borderRadius: '50%',
                 background: avatarColors[i % avatarColors.length],
                 border: '2px solid white', marginLeft: i === 0 ? 0 : -8,
@@ -161,6 +164,14 @@ export default function ProjectDetail() {
           </div>
           <span style={{ fontSize: 11, color: '#aaa' }}>
             {project?.members?.length} member{project?.members?.length !== 1 ? 's' : ''}
+          </span>
+          {/* Show current user's role */}
+          <span style={{
+            fontSize: 10, padding: '2px 8px', borderRadius: 20,
+            background: isAdmin ? '#EEEDFE' : '#E1F5EE',
+            color: isAdmin ? '#3C3489' : '#085041', fontWeight: 500, marginLeft: 'auto'
+          }}>
+            You: {isAdmin ? 'Admin' : 'Member'}
           </span>
         </div>
 
@@ -308,8 +319,8 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      {/* Add Member Modal */}
-      {showMemberModal && (
+      {/* Add Member Modal - only admins can open this */}
+      {showMemberModal && isAdmin && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(26,21,53,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
@@ -346,4 +357,3 @@ const lbl = { display: 'block', fontSize: 12, fontWeight: 500, color: '#555', ma
 const inp = { width: '100%', padding: '10px 14px', border: '1px solid #e0deff', borderRadius: 8, fontSize: 13, outline: 'none', color: '#1a1535', background: '#fafafe', boxSizing: 'border-box' };
 const cancelBtn = { flex: 1, padding: '10px', border: '1px solid #e0deff', borderRadius: 8, background: 'white', color: '#666', fontSize: 13, cursor: 'pointer' };
 const submitBtn = { flex: 1, padding: '10px', border: 'none', borderRadius: 8, background: '#6c63ff', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' };
- 
